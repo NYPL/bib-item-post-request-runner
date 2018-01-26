@@ -1,0 +1,8 @@
+event.json
+build/*
+node_modules
+.DS_Store
+
+# credentials
+config/qa.env
+config/production.env

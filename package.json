@@ -1,0 +1,17 @@
+{
+  "name": "bib-item-repost-runner",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@nypl/nypl-data-api-client": "^1.0.0",
+    "dotenv": "^4.0.0",
+    "fs": "0.0.1-security",
+    "minimist": "^1.2.0"
+  }
+}
