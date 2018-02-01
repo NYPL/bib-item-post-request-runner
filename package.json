@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "./node_modules/.bin/standard --env mocha --globals expect && NODE_ENV=test ./node_modules/.bin/mocha test"
   },
   "author": "",
   "license": "ISC",
@@ -12,6 +12,29 @@
     "@nypl/nypl-data-api-client": "^1.0.0",
     "dotenv": "^4.0.0",
     "fs": "0.0.1-security",
-    "minimist": "^1.2.0"
+    "minimist": "^1.2.0",
+    "winston": "^2.4.0"
+  },
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "chai-as-promised": "^7.1.1",
+    "mocha": "^5.0.0",
+    "sinon": "^4.2.2"
+  },
+  "standard": {
+    "ignore": [
+      "cache/**",
+      "data/**"
+    ],
+    "globals": [
+      "describe",
+      "it",
+      "expect",
+      "beforeEach",
+      "afterEach",
+      "before",
+      "after",
+      "timeout"
+    ]
   }
 }
