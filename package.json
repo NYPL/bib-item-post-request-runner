@@ -2,7 +2,7 @@
   "name": "bib-item-repost-runner",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "run.js",
   "scripts": {
     "test": "./node_modules/.bin/standard --env mocha --globals expect && NODE_ENV=test ./node_modules/.bin/mocha test"
   },
