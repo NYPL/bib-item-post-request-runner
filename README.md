@@ -13,12 +13,12 @@ Fill your environment file with meaningful config.
 ## Running
 
 ```
-node run TYPE NYPLSOURCE [STARTINGID] --envfile ENVFILE [--limit LIMIT] [--batchSize BATCHSIZE] [--batchDelay BATCHDELAY]
+node run TYPE NYPLSOURCE --envfile ENVFILE [--start STARTINGID] [--limit LIMIT] [--batchSize BATCHSIZE] [--batchDelay BATCHDELAY]
 ```
 
  * `TYPE`: Either "bibs" or "items".
  * `NYPLSOURCE`: Specify the nyplSource (Must be one of: 'sierra-nypl', 'recap-pul', 'recap-cul')
- * `STARTINGID`: Optional starting id, e.g. 'b13410675'. Default '0', i.e. the lowest id in the store.
+ * `STARTINGID`: Optional starting id, e.g. '13410675'. Default '0', i.e. the lowest id in the store.
  * `ENVFILE`: Path to local `config/[environment].env` containing API credentials
  * `LIMIT`: Optional integer limit, e.g. 1000. Default 1000.
  * `BATCHSIZE`: Optional integer batch size, e.g. 100. Default 100.
