@@ -20,7 +20,7 @@ describe('Reposter', function () {
 
   describe('repost', function () {
     beforeEach(() => {
-      // Stub Reposter.prototype.doPost to respond with faked new lastId
+      // Stub NyplApiClient to respond with fake lastId
       sinon.stub(NyplApiClient.prototype, 'post').callsFake(stubbedPostFunction)
 
       reposter = new Reposter()
@@ -73,7 +73,9 @@ describe('Reposter', function () {
   })
 
   describe('repost error handling', function () {
-    this.timeout(10000)
+    // We're testing failures, which incur exponential back-off delays
+    // of a little over 4s per call:
+    this.timeout(13 * 1000)
 
     beforeEach(function () {
       let callCount = 0
@@ -81,10 +83,13 @@ describe('Reposter', function () {
       // Set up a stub that responds in error every other call:
       sinon.stub(NyplApiClient.prototype, 'post').callsFake((path, params) => {
         callCount += 1
-        // Every other call, either respond with success:
-        if (callCount % 2 === 0) return stubbedPostFunction(path, params)
-        // .. or emulate a 500:
-        else return Promise.reject()
+
+        // First time: respond with rejection (i.e. network error):
+        if (callCount % 3 === 1) return Promise.reject()
+        // Second time: respond with a 400:
+        else if (callCount % 3 === 2) return Promise.resolve({ statusCode: 400 })
+        // Third time: respond with success:
+        else return stubbedPostFunction(path, params)
       })
 
       reposter = new Reposter()
@@ -96,7 +101,10 @@ describe('Reposter', function () {
     })
 
     it('should retry on failure', function () {
-      return expect(reposter.repost('bibs', 'sierra-nypl', { limit: 10, batchSize: 2 })).to.eventually.be.fulfilled
+      // Let's process 3 records with batchSize 2
+      // So we expect it to process a batch of 2 followed by a batch of one
+      // The stub above is scripted to fail 2/3 of the time
+      return expect(reposter.repost('bibs', 'sierra-nypl', { limit: 3, batchSize: 2 })).to.eventually.be.fulfilled
     })
   })
 })

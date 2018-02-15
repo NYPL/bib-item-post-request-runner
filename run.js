@@ -11,6 +11,9 @@ const argv = minimist(process.argv, {
   }
 })
 
+if (!argv.envfile || !fs.existsSync(argv.envfile)) throw new Error('Must specify --envfile')
+dotenv.config({ path: argv.envfile })
+
 const Reposter = require('./lib/reposter.js')
 
 const which = argv._[2]
@@ -26,9 +29,6 @@ if (limit && (typeof limit) !== 'number') throw new Error('Invalid limit. Must b
 if (batchSize && (typeof batchSize) !== 'number') throw new Error('Invalid batchSize. Must be numeric')
 if (batchDelay && (typeof batchDelay) !== 'number') throw new Error('Invalid batchDelay. Must be numeric')
 
-if (!argv.envfile || !fs.existsSync(argv.envfile)) throw new Error('Must specify --envfile')
-dotenv.config({ path: argv.envfile })
-
 console.log([
   `Running repost on ${which}`,
   `start at '${start}'`,
@@ -38,4 +38,7 @@ console.log([
 
 const reposter = new Reposter()
 reposter.repost(which, nyplSource, { start, limit, batchSize, batchDelay })
+  .catch((e) => {
+    console.log(`Encountered error: ${e.name}\n  ${e.message}`)
+  })
 
