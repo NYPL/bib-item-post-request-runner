@@ -7,3 +7,6 @@ node_modules
 config/development.env
 config/qa.env
 config/production.env
+
+# local persisted monitor file
+run-monitor.json

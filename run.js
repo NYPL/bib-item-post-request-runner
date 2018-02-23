@@ -4,7 +4,7 @@ const fs = require('fs')
 
 const argv = minimist(process.argv, {
   default: {
-    start: '0',
+    start: '',
     limit: 1000,
     batchSize: 100,
     batchDelay: 0
