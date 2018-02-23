@@ -35,3 +35,29 @@ And this will post 50K `recap-pul` items starting at id 'id1234567' in batches o
 ```
 node run items recap-pul id1234556 --limit 50000 --batchSize 100 --envfile config/[env file]
 ```
+
+## EC2 Server
+
+This script is currently deployed to a t2.micro EC2 ("i-0292519e23afa7cb4") in nypl-sandbox. A [build-ec2.sh](build-ec2.sh) script is included to document setting up the basic environment.
+
+The current practice is to run jobs in parallel (one per type/nyplSource combination) via `screen`, as in:
+
+```
+# Start a screen session:
+screen
+
+# Run the runner on PUL bibs:
+node run bibs recap-pul --limit 5000000 --batchSize 500 --envfile config/production.env >(tee -a pul-bibs.log )
+
+# Spawn a new screen window:
+[crtrl]-a c
+# Run the runner on PUL *items*:
+node run items recap-pul --limit 5000000 --batchSize 500 --envfile config/production.env >(tee -a pul-items.log )
+
+[crtrl]-a c
+node run bibs recap-cul --limit 5000000 --batchSize 500 --envfile config/production.env >(tee -a cul-bibs.log )
+
+# .. etc
+```
+
+Long term, we should wrap this up as a buildable container.
