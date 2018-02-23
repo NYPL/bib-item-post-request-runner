@@ -47,15 +47,15 @@ The current practice is to run jobs in parallel (one per type/nyplSource combina
 screen
 
 # Run the runner on PUL bibs:
-node run bibs recap-pul --limit 5000000 --batchSize 500 --envfile config/production.env >(tee -a pul-bibs.log )
+node run bibs recap-pul --limit 5000000 --batchSize 500 --envfile config/production.env 2> >(tee -a pul-bibs.log )
 
 # Spawn a new screen window:
 [crtrl]-a c
 # Run the runner on PUL *items*:
-node run items recap-pul --limit 5000000 --batchSize 500 --envfile config/production.env >(tee -a pul-items.log )
+node run items recap-pul --limit 5000000 --batchSize 500 --envfile config/production.env 2> >(tee -a pul-items.log )
 
 [crtrl]-a c
-node run bibs recap-cul --limit 5000000 --batchSize 500 --envfile config/production.env >(tee -a cul-bibs.log )
+node run bibs recap-cul --limit 5000000 --batchSize 500 --envfile config/production.env 2> >(tee -a cul-bibs.log )
 
 # .. etc
 ```
