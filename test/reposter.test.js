@@ -72,7 +72,7 @@ describe('Reposter', function () {
     })
   })
 
-  describe('repost error handling', function () {
+  describe('repost error handling including exponential back-off (takes ~13s)', function () {
     // We're testing failures, which incur exponential back-off delays
     // of a little over 4s per call:
     this.timeout(13 * 1000)

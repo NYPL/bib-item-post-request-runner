@@ -10,8 +10,10 @@
   "license": "ISC",
   "dependencies": {
     "@nypl/nypl-data-api-client": "^1.0.0",
+    "deepmerge": "^2.0.1",
     "dotenv": "^4.0.0",
     "fs": "0.0.1-security",
+    "lockfile": "^1.0.3",
     "minimist": "^1.2.0",
     "winston": "^2.4.0"
   },
