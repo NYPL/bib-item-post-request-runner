@@ -20,11 +20,11 @@ node run TYPE NYPLSOURCE --envfile ENVFILE [--start STARTINGID] [--limit LIMIT] 
  * `NYPLSOURCE`: Specify the nyplSource (Must be one of: 'sierra-nypl', 'recap-pul', 'recap-cul')
  * `STARTINGID`: Optional starting id, e.g. '13410675'. Default '0', i.e. the lowest id in the store.
  * `ENVFILE`: Path to local `config/[environment].env` containing API credentials
- * `LIMIT`: Optional integer limit, e.g. 1000. Default 1000.
+ * `LIMIT`: Optional integer limit, e.g. 1000. Default is no limit (i.e. process *all*)
  * `BATCHSIZE`: Optional integer batch size, e.g. 100. Default 100.
  * `BATCHDELAY`: Optional integer delay in ms to wait between batches, e.g. 100. Default 0.
 
-For example, this will cause the Bibs service to re-post the first 1000 `sierra-nypl` bibs into the `Bibs` stream:
+For example, this will cause the Bibs service to re-post all `sierra-nypl` bibs into the `Bibs` stream:
 
 ```
 node run bibs sierra-nypl --envfile config/[env file]
@@ -44,6 +44,14 @@ To process `b21415296` (i.e. sierra-nypl, 21415296) invoke the runner with `star
 
 ```
 node run bibs sierra-nypl --start 21415295 --limit 1 --envfile config/[env file]
+```
+
+### Processing the whole catalog
+
+A special script is provided to invoke multiple concurrent post runners on each of the known source/type pairs (e.g. sierra-nypl/bib, sierra-nypl/item, recap-pul/bib, etc.).
+
+```
+node run-all --envfile ENVFILE [--batchSize BATCHSIZE] [--batchDelay BATCHDELAY]
 ```
 
 ## EC2 Server
