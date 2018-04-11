@@ -1,6 +1,7 @@
 const dotenv = require('dotenv')
 const minimist = require('minimist')
 const fs = require('fs')
+const path = require('path')
 
 const argv = minimist(process.argv, {
   default: {
@@ -35,7 +36,10 @@ console.log([
   batchDelay ? ` with ${batchDelay}ms batch delay}` : ''
 ].join(', '))
 
-const reposter = new Reposter()
+// Build logging path using env (e.g. production), source, and type
+const loggingNamespace = `${path.basename(argv.envfile, '.env')}-${nyplSource}-${which}`
+const reposter = new Reposter({ loggingNamespace })
+
 reposter.repost(which, nyplSource, { start, limit, batchSize, batchDelay })
   .catch((e) => {
     console.log(`Encountered error: ${e.name}\n  ${e.message}`)
