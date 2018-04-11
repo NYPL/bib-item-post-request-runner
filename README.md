@@ -33,7 +33,17 @@ node run bibs sierra-nypl --envfile config/[env file]
 And this will post 50K `recap-pul` items starting at id 'id1234567' in batches of 100:
 
 ```
-node run items recap-pul id1234556 --limit 50000 --batchSize 100 --envfile config/[env file]
+node run items recap-pul --start id1234556 --limit 50000 --batchSize 100 --envfile config/[env file]
+```
+
+### Processing a single record
+
+Although this tool's primary purpose is bulk processing, it can also be used to process a single bib/item if you know (or can surmise) the id that immediately precedes the record you would like to process. (The bib/item posting service is controlled by specifying the id *above which* to start processing.)
+
+To process `b21415296` (i.e. sierra-nypl, 21415296) invoke the runner with `start` set to the *previous* id (i.e. `21415295`):
+
+```
+node run bibs sierra-nypl --start 21415295 --limit 1 --envfile config/[env file]
 ```
 
 ## EC2 Server
