@@ -58,24 +58,18 @@ node run-all --envfile ENVFILE [--batchSize BATCHSIZE] [--batchDelay BATCHDELAY]
 
 This script is currently deployed to a t2.micro EC2 ("i-0292519e23afa7cb4") in nypl-sandbox. A [build-ec2.sh](build-ec2.sh) script is included to document setting up the basic environment.
 
-The current practice is to run jobs in parallel (one per type/nyplSource combination) via `screen`, as in:
+The current practice is to invoke a `run-all` job via `screen`, as in:
 
 ```
 # Start a screen session:
 screen
 
 # Run the runner on PUL bibs:
-node run bibs recap-pul --limit 5000000 --batchSize 500 --envfile config/production.env 2> >(tee -a pul-bibs.log )
+node run-all --envfile config/production.env --batchSize 500 --batchDelay 1000
 
-# Spawn a new screen window:
-[crtrl]-a c
-# Run the runner on PUL *items*:
-node run items recap-pul --limit 5000000 --batchSize 500 --envfile config/production.env 2> >(tee -a pul-items.log )
-
-[crtrl]-a c
-node run bibs recap-cul --limit 5000000 --batchSize 500 --envfile config/production.env 2> >(tee -a cul-bibs.log )
-
-# .. etc
+# `[ctrl]-a d` to detach
 ```
+
+`screen -r` will reattach.
 
 Long term, we should wrap this up as a buildable container.
