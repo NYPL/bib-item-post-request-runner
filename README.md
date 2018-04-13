@@ -64,10 +64,12 @@ The current practice is to invoke a `run-all` job via `screen`, as in:
 # Start a screen session:
 screen
 
-# Run the runner on PUL bibs:
+# Process all bibs & items:
 node run-all --envfile config/production.env --batchSize 500 --batchDelay 1000
 
 # `[ctrl]-a d` to detach
+
+tail -f logs/[env]-all.log
 ```
 
 `screen -r` will reattach.
