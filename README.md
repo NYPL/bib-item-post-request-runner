@@ -46,6 +46,26 @@ To process `b21415296` (i.e. sierra-nypl, 21415296) invoke the runner with `star
 node run bibs sierra-nypl --start 21415295 --limit 1 --envfile config/[env file]
 ```
 
+### Processing from a timestamp
+
+Sometimes it's useful to re-post bibs & items from a specific updated timestamp.
+
+To re-post all bibs updated on or after Jun 11, 2018 2am GMT:
+
+```
+node run bibs --envfile config/development.env --lastUpdatedDate 2018-06-11T02:00:00Z
+```
+
+To re-post all bibs updated between Jun 11, 2018 2am and Jun 12, 2018 2am GMT:
+
+```
+node run bibs --envfile config/development.env --lastUpdatedDate 2018-06-11T02:00:00Z --lastUpdatedStop 2018-06-12T02:00:00Z
+```
+
+Note that when running a repost job using `lastUpdatedDate`, all command line arguments noted above apply (e.g. `--limit`, `--batchsize`) *except* for `--start` and `NYPLSOURCE`, which are only relevant for re-posting by nypl-source & id.
+
+Note also that when re-posting by timestamp, `lastUpdatedDate` is used to paginate. (Normally `lastId` is used.) Because `lastUpdatedDate` is only accurate to the nearest second, multiple bibs can share a `lastUpdatedDate` value, which means we should keep our `batchSize` high lest we miss records. We haven't encountered an instance where `--batchSize 250` encountered probematic patches.
+
 ### Processing the whole catalog
 
 A special script is provided to invoke multiple concurrent post runners on each of the known source/type pairs (e.g. sierra-nypl/bib, sierra-nypl/item, recap-pul/bib, etc.).

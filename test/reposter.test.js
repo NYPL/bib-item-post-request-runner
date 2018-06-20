@@ -7,18 +7,21 @@ const sinon = require('sinon')
 dotenv.config({ path: './config/sample.env' })
 
 describe('Reposter', function () {
-  let reposter = null
-
   const stubbedPostFunction = (path, params) => {
     const response = Object.assign({}, params, {
       // Append '0' to previous lastId so that we appear to be progressing
       // through alphabetically increasing ids:
-      lastId: params.lastId + '0'
+      lastId: params.lastId + '0',
+      // Increase lastUpdatedDate by 1000ms to emulate moving forward through
+      // records by timestamp:
+      lastUpdatedDate: params.lastUpdatedDate ? (new Date(Date.parse(params.lastUpdatedDate) + 1000)).toISOString() : null
     })
     return Promise.resolve(response)
   }
 
   describe('repost', function () {
+    let reposter = null
+
     beforeEach(() => {
       // Stub NyplApiClient to respond with fake lastId
       sinon.stub(NyplApiClient.prototype, 'post').callsFake(stubbedPostFunction)
@@ -70,9 +73,26 @@ describe('Reposter', function () {
         return expect(ellapsed).to.be.at.least(expectedEllapsed)
       })
     })
+
+    it('should accept lastUpdatedDate', function () {
+      // Repost calls don't resolve the api response (there may be multiple),
+      // but expect it to fullfill:
+      return expect(reposter.repost('bibs', null, { lastUpdatedDate: new Date('2018-06-11T01:00:00Z') })).to.eventually.be.fulfilled
+    })
+
+    it('should process range of lastUpdatedDate', function () {
+      // Process three seconds starting at '2018-06-11T01:00:00Z'
+      // Our stub function just increments the queried lastUpdatedDate by one s
+      // so we expect a 3s range to fire three posts
+      return reposter.repost('bibs', null, { lastUpdatedDate: new Date('2018-06-11T01:00:00Z'), lastUpdatedDateStop: new Date('2018-06-11T01:00:03Z') }).then(() => {
+        return expect(NyplApiClient.prototype.post.callCount).to.equal(3)
+      })
+    })
   })
 
   describe('repost error handling including exponential back-off (takes ~13s)', function () {
+    let reposter = null
+
     // We're testing failures, which incur exponential back-off delays
     // of a little over 4s per call:
     this.timeout(13 * 1000)
