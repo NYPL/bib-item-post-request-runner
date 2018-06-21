@@ -12,9 +12,9 @@ describe('Reposter', function () {
       // Append '0' to previous lastId so that we appear to be progressing
       // through alphabetically increasing ids:
       lastId: params.lastId + '0',
-      // Increase lastUpdatedDate by 1000ms to emulate moving forward through
+      // Increase lastUpdatedDate by 2000ms to emulate moving forward through
       // records by timestamp:
-      lastUpdatedDate: params.lastUpdatedDate ? (new Date(Date.parse(params.lastUpdatedDate) + 1000)).toISOString() : null
+      lastUpdatedDate: params.lastUpdatedDate ? (new Date(Date.parse(params.lastUpdatedDate) + 2000)).toISOString() : null
     })
     return Promise.resolve(response)
   }
