@@ -59,7 +59,7 @@ node run bibs --envfile config/development.env --lastUpdatedDate 2018-06-11T02:0
 To re-post all bibs updated between Jun 11, 2018 2am and Jun 12, 2018 2am GMT:
 
 ```
-node run bibs --envfile config/development.env --lastUpdatedDate 2018-06-11T02:00:00Z --lastUpdatedStop 2018-06-12T02:00:00Z
+node run bibs --envfile config/development.env --lastUpdatedDate 2018-06-11T02:00:00Z --lastUpdatedDateStop 2018-06-12T02:00:00Z
 ```
 
 Note that when running a repost job using `lastUpdatedDate`, all command line arguments noted above apply (e.g. `--limit`, `--batchsize`) *except* for `--start` and `NYPLSOURCE`, which are only relevant for re-posting by nypl-source & id.
