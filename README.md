@@ -86,10 +86,10 @@ node run TYPE NYPLSOURCE --envfile ENVFILE [--start STARTINGID] [--ids IDS] [--l
 ### Processing a specific id or set of ids:
 
 ```
-node run TYPE NYPLSOURCE --envfile ENVFILE [--ids STARTINGID]
+node run TYPE NYPLSOURCE --envfile ENVFILE [--ids IDS]
 ```
 
- * `IDS`: Optional list of specific ids to process, e.g. '13410675,13410675'.
+ * `IDS`: List of specific ids to process, e.g. '13410675,13410675'.
 
 To process `b21415296` (i.e. sierra-nypl, 21415296):
 
@@ -101,6 +101,20 @@ To process sierra-nypl bibs 1234 & 4567:
 
 ```
 node run bibs sierra-nypl --envfile ENVFILE --ids 1234,4567
+```
+
+### Processing a specific batch of ids from a CSV:
+
+```
+node run TYPE NYPLSOURCE --envfile ENVFILE [--csv CSV]
+```
+
+ * `CSV`: Path to a CSV containing a single column containing bib ids, e.g. '13410675\n13410675'.
+
+For example, to process all bibs identified in `bibids.csv`:
+
+```
+node run bibs sierra-nypl --envfile config/qa.env --csv bibids.csv
 ```
 
 ### Processing the whole catalog (i.e. bibs & items from all partners)
