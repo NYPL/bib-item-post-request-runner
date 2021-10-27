@@ -12,45 +12,36 @@ Fill your environment file with meaningful config.
 
 ## Running
 
+The basis for all calls is as follows:
+
 ```
-node run TYPE NYPLSOURCE --envfile ENVFILE [--start STARTINGID] [--limit LIMIT] [--batchSize BATCHSIZE] [--batchDelay BATCHDELAY]
+node run TYPE NYPLSOURCE --envfile ENVFILE \
+ [--limit LIMIT] \
+ [--batchSize BATCHSIZE] \
+ [--batchDelay BATCHDELAY]
+ ...
 ```
 
- * `TYPE`: Either "bibs" or "items".
- * `NYPLSOURCE`: Specify the nyplSource (Must be one of: 'sierra-nypl', 'recap-pul', 'recap-cul')
- * `STARTINGID`: Optional starting id, e.g. '13410675'. Default '0', i.e. the lowest id in the store.
- * `ENVFILE`: Path to local `config/[environment].env` containing API credentials
- * `LIMIT`: Optional integer limit, e.g. 1000. Default is no limit (i.e. process *all*)
+ * `TYPE`: **Required:** Either "bibs" or "items".
+ * `NYPLSOURCE`: **Required:** Specify the nyplSource (Must be one of: 'sierra-nypl', 'recap-pul', 'recap-cul')
+ * `ENVFILE`: **Required:** path to local `config/[environment].env` containing API credentials
  * `BATCHSIZE`: Optional integer batch size, e.g. 100. Default 100.
  * `BATCHDELAY`: Optional integer delay in ms to wait between batches, e.g. 100. Default 0.
+ * `LIMIT`: Optional integer limit, e.g. 1000. Default is no limit (i.e. process *all*)
 
-For example, this will cause the Bibs service to re-post all `sierra-nypl` bibs into the `Bibs` stream:
-
-```
-node run bibs sierra-nypl --envfile config/[env file]
-```
-
-And this will post 50K `recap-pul` items starting at id 'id1234567' in batches of 100:
-
-```
-node run items recap-pul --start id1234556 --limit 50000 --batchSize 100 --envfile config/[env file]
-```
-
-### Processing a single record
-
-Although this tool's primary purpose is bulk processing, it can also be used to process a single bib/item if you know (or can surmise) the id that immediately precedes the record you would like to process. (The bib/item posting service is controlled by specifying the id *above which* to start processing.)
-
-To process `b21415296` (i.e. sierra-nypl, 21415296) invoke the runner with `start` set to the *previous* id (i.e. `21415295`):
-
-```
-node run bibs sierra-nypl --start 21415295 --limit 1 --envfile config/[env file]
-```
+Without any other qualifiers, the above will process records starting from id '0' (i.e. *all* records up to `limit`). See below for adding additional qualifiers to narrow the scope:
 
 ### Processing from a timestamp
 
 Sometimes it's useful to re-post bibs & items from a specific updated timestamp.
 
-To re-post all bibs updated on or after Jun 11, 2018 2am GMT:
+```
+node run TYPE NYPLSOURCE --envfile ENVFILE [--lastUpdatedDate UPDATEDDATE]
+```
+
+ * `UPDATEDDATE`: Optional ISO 8601 formatted datetime, e.g. "2018-06-11T02:00:00Z"
+
+For example, to re-post all bibs updated on or after Jun 11, 2018 2am GMT:
 
 ```
 node run bibs --envfile config/development.env --lastUpdatedDate 2018-06-11T02:00:00Z
@@ -66,7 +57,53 @@ Note that when running a repost job using `lastUpdatedDate`, all command line ar
 
 Note also that when re-posting by timestamp, `lastUpdatedDate` is used to paginate. (Normally `lastId` is used.) Because `lastUpdatedDate` is only accurate to the nearest second, multiple bibs can share a `lastUpdatedDate` value, which means we should keep our `batchSize` high lest we miss records. We haven't encountered an instance where `--batchSize 250` encountered probematic patches.
 
-### Processing the whole catalog
+### Run alphabetically over a set of ids (aka *processing everything*)
+
+Processing by `id` ascending is useful for processing very large batches of records - in particular for processing *all* records because sorting by `id` is a little arbitrary. Note that id "1000" will be processed before id "200" because the ids are stored as Strings.
+
+```
+node run TYPE NYPLSOURCE --envfile ENVFILE [--start STARTINGID]
+```
+
+ * `STARTINGID`: Optional starting id, e.g. '13410675'. Default '0', i.e. the lowest id in the store.
+
+For example, this will cause the Bibs service to re-post all `sierra-nypl` bibs into the `Bibs` stream:
+
+```
+node run bibs sierra-nypl --envfile config/[env file]
+```
+
+And this will post 50K `recap-pul` items starting at id 'id1234567' in batches of 100:
+
+```
+node run items recap-pul --start id1234556 --limit 50000 --batchSize 100 --envfile config/[env file]
+```
+
+```
+node run TYPE NYPLSOURCE --envfile ENVFILE [--start STARTINGID] [--ids IDS] [--limit LIMIT] [--batchSize BATCHSIZE] [--batchDelay BATCHDELAY]
+```
+
+### Processing a specific id or set of ids:
+
+```
+node run TYPE NYPLSOURCE --envfile ENVFILE [--ids STARTINGID]
+```
+
+ * `IDS`: Optional list of specific ids to process, e.g. '13410675,13410675'.
+
+To process `b21415296` (i.e. sierra-nypl, 21415296):
+
+```
+node run bibs sierra-nypl --envfile ENVFILE --ids 21415295
+```
+
+To process sierra-nypl bibs 1234 & 4567:
+
+```
+node run bibs sierra-nypl --envfile ENVFILE --ids 1234,4567
+```
+
+### Processing the whole catalog (i.e. bibs & items from all partners)
 
 A special script is provided to invoke multiple concurrent post runners on each of the known source/type pairs (e.g. sierra-nypl/bib, sierra-nypl/item, recap-pul/bib, etc.).
 
