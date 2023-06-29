@@ -23,7 +23,7 @@ node run TYPE NYPLSOURCE --envfile ENVFILE \
 ```
 
  * `TYPE`: **Required:** Either "bibs" or "items".
- * `NYPLSOURCE`: **Required:** Specify the nyplSource (Must be one of: 'sierra-nypl', 'recap-pul', 'recap-cul')
+ * `NYPLSOURCE`: **Usually Required:** (Not required for certain invocations using `--csv`.) Specify the nyplSource (Must be one of: 'sierra-nypl', 'recap-pul', 'recap-cul')
  * `ENVFILE`: **Required:** path to local `config/[environment].env` containing API credentials
  * `BATCHSIZE`: Optional integer batch size, e.g. 100. Default 100.
  * `BATCHDELAY`: Optional integer delay in ms to wait between batches, e.g. 100. Default 0.
@@ -103,7 +103,7 @@ To process sierra-nypl bibs 1234 & 4567:
 node run bibs sierra-nypl --envfile ENVFILE --ids 1234,4567
 ```
 
-### Processing a specific batch of ids from a CSV:
+### Processing a batch of ids from a CSV:
 
 ```
 node run TYPE NYPLSOURCE --envfile ENVFILE [--csv CSV]
@@ -116,6 +116,18 @@ For example, to process all bibs identified in `bibids.csv`:
 ```
 node run bibs sierra-nypl --envfile config/qa.env --csv bibids.csv
 ```
+
+### Processing a batch of prefixed ids (e.g. 'b1234', 'cb4567') from a CSV:
+
+Sometimes the input has prefixed ids because you need to index records from multiple institutions. One common source of such a CSV is the [identify-ids-by-query](https://github.com/NYPL/discovery-hybrid-indexer/blob/development/scripts/identify-ids-by-query.js) script (run with `--stripprefix` omitted).
+
+If you leave off the `NYPLSOURCE` from the command and the CSV contains prefixed ids, you can process it as follows:
+
+```
+node run TYPE --envfile ENVFILE [--csv CSV]
+```
+
+The script will determine `nyplSource` for each row by id prefix and submit the ids in appropriate batches.
 
 ### Processing the whole catalog (i.e. bibs & items from all partners)
 

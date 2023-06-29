@@ -11,6 +11,7 @@
   "dependencies": {
     "@nypl/nypl-data-api-client": "^1.0.0",
     "deepmerge": "^2.0.1",
+    "discovery-store-models": "github:NYPL-discovery/discovery-store-models#v1.4.1",
     "dotenv": "^4.0.0",
     "fs": "0.0.1-security",
     "lockfile": "^1.0.3",
