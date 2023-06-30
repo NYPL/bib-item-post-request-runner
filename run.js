@@ -35,15 +35,12 @@ let lastUpdatedDate = argv.lastUpdatedDate
 let lastUpdatedDateStop = argv.lastUpdatedDateStop
 let parseUris = false
 
-function promptWithDefault (question, defaultValue) {
-  return new Promise((resolve, reject) => {
-    prompt.start()
-    prompt.get(question, (e, result) => {
-      resolve(result[question] || defaultValue)
-    })
-  })
-}
-
+/**
+ *  Given an array of prefixed ids (e.g. 'b1234', 'cb4567') and a "chunkSize",
+ *  returns a array of arrays where each array satisfies:
+ *   - length <= chunkSize
+ *   - all elements of array have same prefix
+ */
 function nyplSourceAwareArrayChunks (arr, chunkSize = 25) {
   const groups = []
   let i = 0
@@ -61,6 +58,11 @@ function nyplSourceAwareArrayChunks (arr, chunkSize = 25) {
   return groups
 }
 
+/**
+ *  Given an array of values and a "chunkSize",
+ *  returns a array of arrays where each array satisfies:
+ *   - length <= chunkSize
+ */
 function arrayChunks (arr, chunkSize) {
   const groups = []
   let i = 0
@@ -70,6 +72,9 @@ function arrayChunks (arr, chunkSize) {
   return groups
 }
 
+/**
+ *  Invoke script using collected global options
+ */
 function runWithOptions () {
   if (!which || ['bibs', 'items'].indexOf(which) < 0) throw new Error('First argument must specify bibs/items')
   if (!nyplSource && !lastUpdatedDate) throw new Error('Second argument must specify valid nyplSource')
@@ -107,7 +112,11 @@ function runWithOptions () {
 
 let csvIndex = argv.offset || 0
 let csvChunkIndex = 0
-function runOverCsv (chunks) {
+
+/**
+ *  Invoke script over an array of arrays of ids (either prefixed or not)
+ */
+function runWithOptionsOverChunks (chunks) {
   ids = chunks[csvChunkIndex]
 
   if (ids && ids.length > 0) {
@@ -130,48 +139,14 @@ function runOverCsv (chunks) {
 
         console.log(`Finished processing chunk ${csvChunkIndex} of ${chunks.length} (CSV index ${csvIndex - 1})`)
 
-        setTimeout(() => runOverCsv(chunks), argv.batchDelay || 100)
+        setTimeout(() => runWithOptionsOverChunks(chunks), argv.batchDelay || 100)
       })
   } else {
     console.log('All done')
   }
 }
 
-if (!which && !nyplSource && !argv.csv) {
-  prompt.start()
-  prompt.get({
-    properties: {
-      which: {
-        description: 'Repost bibs or items?',
-        pattern: /^(bibs|items)$/,
-        default: 'bibs',
-        required: true
-      },
-      nyplSource: {
-        description: 'NYPL Source?',
-        pattern: /^(sierra-nypl|recap-\w{2,3})$/,
-        default: 'sierra-nypl',
-        required: true
-      },
-      ids: {
-        description: 'Specific ids?',
-        pattern: /^(\d+,)*\d+/,
-        before: (v) => v.split(',')
-      }
-    }
-  }, (err, result) => {
-    which = result.which
-    nyplSource = result.nyplSource
-    ids = result.ids
-
-    runWithOptions();
-
-    let cmd = `node run ${which} ${nyplSource} --envfile ${argv.envfile}`
-    if (ids) cmd += ` --ids ${ids.join(',')}`
-    console.log('To replay this:')
-    console.log(cmd)
-  })
-} else if (argv.csv) {
+if (argv.csv) {
   let csv = fs.readFileSync(argv.csv, 'utf8')
     .split("\n")
   if (argv.offset) csv = csv.slice(argv.offset)
@@ -188,7 +163,7 @@ if (!which && !nyplSource && !argv.csv) {
   const chunks = parseUris ?
     nyplSourceAwareArrayChunks(csv, argv.batchSize) :
     arrayChunks(csv, argv.batchSize)
-  runOverCsv(chunks)
+  runWithOptionsOverChunks(chunks)
 
 } else {
   runWithOptions()
