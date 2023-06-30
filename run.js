@@ -79,14 +79,16 @@ function runWithOptions () {
   if (lastUpdatedDate) lastUpdatedDate = new Date(lastUpdatedDate)
   if (lastUpdatedDateStop) lastUpdatedDateStop = new Date(lastUpdatedDateStop)
 
-  console.log([
-    argv.dryrun ? 'DRY RUN!' : '',
-    `Running repost on ${nyplSource} ${which}`,
-    ids ? `for ids ${ids.join(', ')}` : '',
-    lastUpdatedDate ? `from timestamp ${lastUpdatedDate} to ${lastUpdatedDateStop}` : `start at '${start}'`,
-    limit ? `limit ${limit} in batches of ${batchSize}` : ' no limit',
-    batchDelay ? ` with ${batchDelay}ms batch delay}` : ''
-  ].join(', '))
+  // Log out what we're doing
+  const logMessage = []
+  if (argv.dryrun) logMessage.push('DRY RUN! ')
+  logMessage.push(`Running repost on ${nyplSource} ${which}`)
+  if (ids) logMessage.push(` for ${ids.length} ids`)
+  if (lastUpdatedDate) logMessage.push(`, from timestamp ${lastUpdatedDate} to ${lastUpdatedDateStop}`)
+  if (start) logMessage.push(`, start at '${start}'`)
+  if (limit) logMessage.push(`, limit ${limit} in batches of ${batchSize}`)
+  if (batchDelay) logMessage.push(`, with ${batchDelay}ms batch delay`)
+  console.log(logMessage.join(''))
 
   // Build logging path using env (e.g. production), source, and type
   const loggingNamespace = `${path.basename(argv.envfile, '.env')}-${nyplSource}-${which}`
@@ -109,7 +111,7 @@ function runOverCsv (chunks) {
   ids = chunks[csvChunkIndex]
 
   if (ids && ids.length > 0) {
-
+    // Derive nyplSource from prefixed id?
     if (parseUris) {
       nyplSource = NyplSourceMapper.instance()
         .splitIdentifier(ids[0])
@@ -124,9 +126,9 @@ function runOverCsv (chunks) {
     runWithOptions()
       .then(() => {
         csvChunkIndex += 1
-        csvIndex += argv.batchSize
+        csvIndex += ids.length
 
-        console.log(`Finished processing chunk ${csvChunkIndex} of ${chunks.length} (up to index ${csvIndex - 1})`)
+        console.log(`Finished processing chunk ${csvChunkIndex} of ${chunks.length} (CSV index ${csvIndex - 1})`)
 
         setTimeout(() => runOverCsv(chunks), argv.batchDelay || 100)
       })
@@ -174,12 +176,18 @@ if (!which && !nyplSource && !argv.csv) {
     .split("\n")
   if (argv.offset) csv = csv.slice(argv.offset)
   if (limit) csv = csv.slice(0, limit)
+  // Determine whether or not to parse rows as prefixed ids by checking the first row:
   parseUris = /^[a-z]/.test(csv[0])
 
-  // the --ids flag seems to have a functional limit of 25
+  if (argv.batchSize > 25) {
+    // The Bib and Item services appear to limit the number of 'ids' that can be
+    // used in a post request to 25:
+    console.log(`Overriding batchSize to 25 to accomodate functional limit for post-requests by 'ids'`)
+    argv.batchSize = 25
+  }
   const chunks = parseUris ?
-    nyplSourceAwareArrayChunks(csv, Math.min(argv.batchSize, 25)) :
-    arrayChunks(csv, Math.min(argv.batchSize, 25))
+    nyplSourceAwareArrayChunks(csv, argv.batchSize) :
+    arrayChunks(csv, argv.batchSize)
   runOverCsv(chunks)
 
 } else {

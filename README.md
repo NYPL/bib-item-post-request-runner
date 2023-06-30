@@ -119,9 +119,9 @@ node run bibs sierra-nypl --envfile config/qa.env --csv bibids.csv
 
 ### Processing a batch of prefixed ids (e.g. 'b1234', 'cb4567') from a CSV:
 
-Sometimes the input has prefixed ids because you need to index records from multiple institutions. One common source of such a CSV is the [identify-ids-by-query](https://github.com/NYPL/discovery-hybrid-indexer/blob/development/scripts/identify-ids-by-query.js) script (run with `--stripprefix` omitted).
+Sometimes the input has prefixed ids because you need to index records from multiple institutions. One common source of such a CSV is the [identify-ids-by-query](https://github.com/NYPL/discovery-hybrid-indexer/blob/development/scripts/identify-ids-by-query.js) script (i.e. run without `--stripprefix`).
 
-If you leave off the `NYPLSOURCE` from the command and the CSV contains prefixed ids, you can process it as follows:
+If the CSV contains prefixed ids, you can leave off the `NYPLSOURCE` argument to process it as follows:
 
 ```
 node run TYPE --envfile ENVFILE [--csv CSV]
