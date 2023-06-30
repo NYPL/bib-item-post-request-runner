@@ -113,6 +113,8 @@ let csvIndex = argv.offset || 0
 
 /**
  *  Invoke script over an array of arrays of ids (either prefixed or not)
+ *
+ *  If ids are prefixed, the ids in each chunk will have the same prefix.
  */
 function runWithOptionsOverChunks (chunks, chunkIndex = 0, options = {}) {
   options = Object.assign({
@@ -124,6 +126,8 @@ function runWithOptionsOverChunks (chunks, chunkIndex = 0, options = {}) {
   if (ids && ids.length > 0) {
     // Derive nyplSource from prefixed id?
     if (options.parseUris) {
+      // We can derive the nyplSource of the chunk by inspecting any id because
+      // we know that chunks have been pre-sorted to have the same prefix.
       nyplSource = NyplSourceMapper.instance()
         .splitIdentifier(ids[0])
         .nyplSource
