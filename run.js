@@ -33,7 +33,6 @@ let batchSize = argv.batchSize
 let batchDelay = argv.batchDelay
 let lastUpdatedDate = argv.lastUpdatedDate
 let lastUpdatedDateStop = argv.lastUpdatedDateStop
-let parseUris = false
 
 /**
  *  Given an array of prefixed ids (e.g. 'b1234', 'cb4567') and a "chunkSize",
@@ -111,17 +110,20 @@ function runWithOptions () {
 }
 
 let csvIndex = argv.offset || 0
-let csvChunkIndex = 0
 
 /**
  *  Invoke script over an array of arrays of ids (either prefixed or not)
  */
-function runWithOptionsOverChunks (chunks) {
-  ids = chunks[csvChunkIndex]
+function runWithOptionsOverChunks (chunks, chunkIndex = 0, options = {}) {
+  options = Object.assign({
+    parseUris: false
+  }, options)
+
+  ids = chunks[chunkIndex]
 
   if (ids && ids.length > 0) {
     // Derive nyplSource from prefixed id?
-    if (parseUris) {
+    if (options.parseUris) {
       nyplSource = NyplSourceMapper.instance()
         .splitIdentifier(ids[0])
         .nyplSource
@@ -132,14 +134,18 @@ function runWithOptionsOverChunks (chunks) {
       })
     }
 
+    // Having set some global options, invoke script:
     runWithOptions()
       .then(() => {
-        csvChunkIndex += 1
+        chunkIndex += 1
         csvIndex += ids.length
 
-        console.log(`Finished processing chunk ${csvChunkIndex} of ${chunks.length} (CSV index ${csvIndex - 1})`)
+        console.log(`Finished processing chunk ${chunkIndex} of ${chunks.length} (CSV index ${csvIndex - 1})`)
 
-        setTimeout(() => runWithOptionsOverChunks(chunks), argv.batchDelay || 100)
+        // Wait for batchDelay before proceeding on to the next chunk
+        setTimeout(() => {
+          runWithOptionsOverChunks(chunks, chunkIndex, options)
+        }, argv.batchDelay || 100)
       })
   } else {
     console.log('All done')
@@ -151,8 +157,10 @@ if (argv.csv) {
     .split("\n")
   if (argv.offset) csv = csv.slice(argv.offset)
   if (limit) csv = csv.slice(0, limit)
-  // Determine whether or not to parse rows as prefixed ids by checking the first row:
-  parseUris = /^[a-z]/.test(csv[0])
+  // Determine whether or not to parse rows as prefixed ids by checking the
+  // first row. (We assume that if the first row has a prefixed id, all rows
+  // will.)
+  const parseUris = /^[a-z]/.test(csv[0])
 
   if (argv.batchSize > 25) {
     // The Bib and Item services appear to limit the number of 'ids' that can be
@@ -163,7 +171,7 @@ if (argv.csv) {
   const chunks = parseUris ?
     nyplSourceAwareArrayChunks(csv, argv.batchSize) :
     arrayChunks(csv, argv.batchSize)
-  runWithOptionsOverChunks(chunks)
+  runWithOptionsOverChunks(chunks, 0, { parseUris })
 
 } else {
   runWithOptions()
