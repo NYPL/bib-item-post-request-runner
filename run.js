@@ -4,14 +4,16 @@ const fs = require('fs')
 const path = require('path')
 const prompt = require('prompt')
 
+const NyplSourceMapper = require('discovery-store-models/lib/nypl-source-mapper')
+
 const argv = minimist(process.argv, {
   default: {
     start: '',
     ids: '',
-    batchSize: 100,
+    batchSize: 25,
     batchDelay: 0
   },
-  string: ['ids']
+  string: ['ids', 'start']
 })
 
 if (!argv.envfile || !fs.existsSync(argv.envfile)) throw new Error('Must specify --envfile')
@@ -32,15 +34,34 @@ let batchDelay = argv.batchDelay
 let lastUpdatedDate = argv.lastUpdatedDate
 let lastUpdatedDateStop = argv.lastUpdatedDateStop
 
-function promptWithDefault (question, defaultValue) {
-  return new Promise((resolve, reject) => {
-    prompt.start()
-    prompt.get(question, (e, result) => {
-      resolve(result[question] || defaultValue)
-    })
+/**
+ *  Given an array of prefixed ids (e.g. 'b1234', 'cb4567') and a "chunkSize",
+ *  returns a array of arrays where each array satisfies:
+ *   - length <= chunkSize
+ *   - all elements of array have same prefix
+ */
+function nyplSourceAwareArrayChunks (arr, chunkSize = 25) {
+  const groups = []
+  let i = 0
+  const nyplSourceGroupIndex = {}
+  ; arr.forEach((uri) => {
+    const { nyplSource, id } = NyplSourceMapper.instance()
+      .splitIdentifier(uri)
+
+    if ((typeof nyplSourceGroupIndex[nyplSource] === 'undefined') || groups[nyplSourceGroupIndex[nyplSource]].length === chunkSize) {
+      nyplSourceGroupIndex[nyplSource] = groups.length
+      groups.push([])
+    }
+    groups[nyplSourceGroupIndex[nyplSource]].push(uri)
   })
+  return groups
 }
 
+/**
+ *  Given an array of values and a "chunkSize",
+ *  returns a array of arrays where each array satisfies:
+ *   - length <= chunkSize
+ */
 function arrayChunks (arr, chunkSize) {
   const groups = []
   let i = 0
@@ -50,6 +71,9 @@ function arrayChunks (arr, chunkSize) {
   return groups
 }
 
+/**
+ *  Invoke script using collected global options
+ */
 function runWithOptions () {
   if (!which || ['bibs', 'items'].indexOf(which) < 0) throw new Error('First argument must specify bibs/items')
   if (!nyplSource && !lastUpdatedDate) throw new Error('Second argument must specify valid nyplSource')
@@ -59,13 +83,16 @@ function runWithOptions () {
   if (lastUpdatedDate) lastUpdatedDate = new Date(lastUpdatedDate)
   if (lastUpdatedDateStop) lastUpdatedDateStop = new Date(lastUpdatedDateStop)
 
-  console.log([
-    `Running repost on ${which}`,
-    ids ? `for ids ${ids.join(', ')}` : '',
-    lastUpdatedDate ? `from timestamp ${lastUpdatedDate} to ${lastUpdatedDateStop}` : `start at '${start}'`,
-    limit ? `limit ${limit} in batches of ${batchSize}` : ' no limit',
-    batchDelay ? ` with ${batchDelay}ms batch delay}` : ''
-  ].join(', '))
+  // Log out what we're doing
+  const logMessage = []
+  if (argv.dryrun) logMessage.push('DRY RUN! ')
+  logMessage.push(`Running repost on ${nyplSource} ${which}`)
+  if (ids) logMessage.push(` for ${ids.length} ids`)
+  if (lastUpdatedDate) logMessage.push(`, from timestamp ${lastUpdatedDate} to ${lastUpdatedDateStop}`)
+  if (start) logMessage.push(`, start at '${start}'`)
+  if (limit) logMessage.push(`, limit ${limit} in batches of ${batchSize}`)
+  if (batchDelay) logMessage.push(`, with ${batchDelay}ms batch delay`)
+  console.log(logMessage.join(''))
 
   // Build logging path using env (e.g. production), source, and type
   const loggingNamespace = `${path.basename(argv.envfile, '.env')}-${nyplSource}-${which}`
@@ -82,67 +109,73 @@ function runWithOptions () {
   }
 }
 
-let csvChunkIndex = 0
-function runOverCsv (chunks) {
-  ids = chunks[csvChunkIndex]
+let csvIndex = argv.offset || 0
+
+/**
+ *  Invoke script over an array of arrays of ids (either prefixed or not)
+ *
+ *  If ids are prefixed, the ids in each chunk will have the same prefix.
+ */
+function runWithOptionsOverChunks (chunks, chunkIndex = 0, options = {}) {
+  options = Object.assign({
+    parseUris: false
+  }, options)
+
+  ids = chunks[chunkIndex]
 
   if (ids && ids.length > 0) {
+    // Derive nyplSource from prefixed id?
+    if (options.parseUris) {
+      // We can derive the nyplSource of the chunk by inspecting any id because
+      // we know that chunks have been pre-sorted to have the same prefix.
+      nyplSource = NyplSourceMapper.instance()
+        .splitIdentifier(ids[0])
+        .nyplSource
+      ids = ids.map((uri) => {
+        return NyplSourceMapper.instance()
+          .splitIdentifier(uri)
+          .id
+      })
+    }
+
+    // Having set some global options, invoke script:
     runWithOptions()
       .then(() => {
-        csvChunkIndex += 1
+        chunkIndex += 1
+        csvIndex += ids.length
 
-        console.log(`Finished processing chunk ${csvChunkIndex} of ${chunks.length}`)
+        console.log(`Finished processing chunk ${chunkIndex} of ${chunks.length} (CSV index ${csvIndex - 1})`)
 
-        setTimeout(() => runOverCsv(chunks), 100)
+        // Wait for batchDelay before proceeding on to the next chunk
+        setTimeout(() => {
+          runWithOptionsOverChunks(chunks, chunkIndex, options)
+        }, argv.batchDelay || 100)
       })
   } else {
     console.log('All done')
   }
 }
 
-if (!which && !nyplSource) {
-  prompt.start()
-  prompt.get({
-    properties: {
-      which: {
-        description: 'Repost bibs or items?',
-        pattern: /^(bibs|items)$/,
-        default: 'bibs',
-        required: true
-      },
-      nyplSource: {
-        description: 'NYPL Source?',
-        pattern: /^(sierra-nypl|recap-\w{2,3})$/,
-        default: 'sierra-nypl',
-        required: true
-      },
-      ids: {
-        description: 'Specific ids?',
-        pattern: /^(\d+,)*\d+/,
-        before: (v) => v.split(',')
-      }
-    }
-  }, (err, result) => {
-    which = result.which
-    nyplSource = result.nyplSource
-    ids = result.ids
-
-    runWithOptions();
-
-    let cmd = `node run ${which} ${nyplSource} --envfile ${argv.envfile}`
-    if (ids) cmd += ` --ids ${ids.join(',')}`
-    console.log('To replay this:')
-    console.log(cmd)
-  })
-} else if (argv.csv) {
+if (argv.csv) {
   let csv = fs.readFileSync(argv.csv, 'utf8')
     .split("\n")
   if (argv.offset) csv = csv.slice(argv.offset)
   if (limit) csv = csv.slice(0, limit)
+  // Determine whether or not to parse rows as prefixed ids by checking the
+  // first row. (We assume that if the first row has a prefixed id, all rows
+  // will.)
+  const parseUris = /^[a-z]/.test(csv[0])
 
-  // the --ids flag seems to have a functional limit of 25
-  const chunks = arrayChunks(csv, Math.min(argv.batchSize || 25, 25))
-  runOverCsv(chunks)
+  if (argv.batchSize > 25) {
+    // The Bib and Item services appear to limit the number of 'ids' that can be
+    // used in a post request to 25:
+    console.log(`Overriding batchSize to 25 to accomodate functional limit for post-requests by 'ids'`)
+    argv.batchSize = 25
+  }
+  const chunks = parseUris ?
+    nyplSourceAwareArrayChunks(csv, argv.batchSize) :
+    arrayChunks(csv, argv.batchSize)
+  runWithOptionsOverChunks(chunks, 0, { parseUris })
 
 } else {
   runWithOptions()
